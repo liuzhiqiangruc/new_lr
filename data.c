@@ -208,6 +208,9 @@ fea_sort:
 }
 
 DATA * data_load(const char * input, DT_STYLE dt_style, FEA_TYPE fea_type, FEA_SET fea_set, Hash * hs){
+    if (!input){
+        return NULL;
+    }
     // ds : dataset
     DATA * ds = (DATA*)malloc(sizeof(DATA));
     memset(ds, 0, sizeof(DATA));

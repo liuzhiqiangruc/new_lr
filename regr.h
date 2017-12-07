@@ -13,20 +13,26 @@
 #include "regcfg.h"
 #include "data.h"
 
-typedef double (*EVAL_FN)(double *x, void * ds);
-typedef void   (*GRAD_FN)(double *x, void * ds, double * g);
+typedef struct _regr REGR;
 
-typedef struct _regr {
+// calculation the gradient for iteration
+typedef void   (*GRAD_FN)(REGR * regr, double * g); 
+
+// repo the process of iteration, and return the train ds loss with out regulization
+typedef double (*REPO_FN)(REGR * regr);   
+
+struct _regr {
     DATA   * train_ds;        /* train data set */
     DATA   * test_ds;         /* test  data set */
     int      feature_len;     /* feature length */
+    int      K;               /* latent length  */
     double * x;               /* feature result */
-    EVAL_FN  eval_fn;         /* eval function  */
     GRAD_FN  grad_fn;         /* gradient func  */
-    REGP     reg_p;
-}REGR;
+    REPO_FN  repo_fn;         /* report func    */
+    REGP     reg_p;           /* init parament  */
+};
 
-REGR * create_model(EVAL_FN eval_fn, GRAD_FN grad_fn);
+REGR * create_model(GRAD_FN grad_fn, REPO_FN repo_fn);
 int    init_model(REGR * regr);
 int    learn_model(REGR * reg);
 void   save_model(REGR * reg, int n);

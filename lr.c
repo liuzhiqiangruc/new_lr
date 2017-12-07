@@ -91,7 +91,7 @@ double lr_eval(double *x, void *_regr) {
     REGR * regr = (REGR*)_regr;
     DATA * ds   = regr->train_ds;
     int i = 0, j = 0, row = ds->row, col = ds->col;
-    double loss = 0.0, yest = 0.0, add = 0.0, regloss = 0.0;
+    double loss = 0.0, yest = 0.0, add = 0.0;
     double *y    = ds->y;
     double *vals = ds->vals;
     unsigned int * ids = ds->ids;
@@ -122,25 +122,6 @@ double lr_eval(double *x, void *_regr) {
             add -= yest;
         }
         loss += add;
-    }
-    // add loss from regularization
-    regloss = 0.0;
-    if (regr->reg_p.r == 2) { // for L2 Norm
-        for (i = 0; i < col ; i++){
-            regloss += x[i] * x[i];
-        }
-        loss += regloss * regr->reg_p.gamma;
-    }
-    else if (regr->reg_p.r == 1){  // for L1 Norm
-        for (i = 0; i < col; i++){
-            if (x[i] > 0.0){
-                regloss += x[i];
-            }
-            else if (x[i] < 0.0){
-                regloss -= x[i];
-            }
-        }
-        loss += regloss * regr->reg_p.gamma;
     }
     return loss;
 }

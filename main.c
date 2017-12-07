@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "lr.h"
 
 void help() {
@@ -116,7 +117,11 @@ int main(int argc, char *argv[]) {
     if (lr->test_ds){
         fprintf(stderr, " test: %d\n", lr->test_ds->row);
     }
+
+    long t1 = time(NULL);
     learn_model(lr);
+    long t2 = time(NULL);
+    fprintf(stderr, "using seconds : %ld\n", t2 - t1);
     return 0;
 
 except:

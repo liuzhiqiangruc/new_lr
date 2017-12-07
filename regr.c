@@ -61,9 +61,10 @@ int learn_model(REGR * regr){
         new_loss = regr->eval_fn(regr->x, regr);
         fprintf(stderr, "iter: %d, loss: %.8f\n", i + 1, new_loss);
         if (loss - new_loss <= regr->reg_p.toler){
-            fprintf(stderr, "conv done!!!");
+            fprintf(stderr, "conv done!!!\n");
             break;
         }
+        loss = new_loss;
     }
     return 0;
 }

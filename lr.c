@@ -34,19 +34,25 @@ static void l1_norm(double *x, double *g, double lambda, int n){
     }
 }
 
+static double random_f(){
+    return (1.0 + rand()) / (1.0 + RAND_MAX);
+}
+
 void lr_grad(REGR *regr, double *g){
     DATA * ds   = regr->train_ds;
     int i = 0, j = 0;
     double yest  = 0.0, hx = 0.0;
     memset(g, 0, sizeof(double) * ds->col);
     for (i = 0; i < ds->row; i++) {
-        yest = 0.0;
-        for (j = 0; j < ds->len[i]; j++){
-            yest += regr->x[ds->ids[ds->clen[i] + j]] * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
-        }
-        hx = yest < -30.0 ? 0.0 : (yest > 30.0 ? 1.0 : 1.0 / (1.0 + exp(-yest)));
-        for (j = 0; j < ds->len[i]; j++){
-            g[ds->ids[ds->clen[i] + j]] += (hx - ds->y[i]) * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
+        if (random() > 0.8){
+            yest = 0.0;
+            for (j = 0; j < ds->len[i]; j++){
+                yest += regr->x[ds->ids[ds->clen[i] + j]] * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
+            }
+            hx = yest < -30.0 ? 0.0 : (yest > 30.0 ? 1.0 : 1.0 / (1.0 + exp(-yest)));
+            for (j = 0; j < ds->len[i]; j++){
+                g[ds->ids[ds->clen[i] + j]] += (hx - ds->y[i]) * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
+            }
         }
     }
     if (regr->reg_p.r == 2){    // for l2 norm

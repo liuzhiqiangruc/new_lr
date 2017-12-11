@@ -127,6 +127,9 @@ int main(int argc, char *argv[]) {
     lr->learn_fn(lr);
     long t2 = time(NULL);
     fprintf(stderr, "using seconds : %ld\n", t2 - t1);
+    save_model(lr, lr->reg_p.n);
+    free_model(lr);
+    lr = NULL;
     return 0;
 
 except:

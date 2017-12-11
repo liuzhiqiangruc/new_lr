@@ -74,7 +74,7 @@ static int lr_learn (REGR * regr){
     DATA * ds = regr->train_ds;
     g = (double*)calloc(regr->feature_len, sizeof(double));
     loss = lr_repo(regr);
-    for (n = 0; n < regr->reg_p.n; n++){
+    for (n = 1; n <= regr->reg_p.n; n++){
         for (i = 0; i < ds->row; i++){
             offs = ds->clen[i];
             len  = ds->len[i];
@@ -103,6 +103,9 @@ static int lr_learn (REGR * regr){
                 }
                 regr->x[ds->ids[offs + j]] -= delta;
             }
+        }
+        if (n % regr->reg_p.s == 0){
+            save_model(regr, n);
         }
         new_loss = lr_repo(regr);
         if (loss - new_loss <= regr->reg_p.toler){

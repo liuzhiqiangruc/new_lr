@@ -8,6 +8,7 @@
  * ======================================================== */
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include "regr.h"
 
 int init_model(REGR * regr){
@@ -38,4 +39,43 @@ REGR * create_model(LEARN_FN learn_fn){
     REGR *regr = (REGR*)calloc(1, sizeof(REGR));
     regr->learn_fn = learn_fn;
     return regr;
+}
+
+void save_model(REGR * regr, int n){
+    FILE * fp = NULL;
+    char * outdir = regr->reg_p.out_dir;
+    char out_file[512] = {0};
+    mkdir(outdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    if (n < regr->reg_p.n){
+        snprintf(out_file, 200, "%s/%d_coe", regr->reg_p.out_dir, n);
+    }
+    else{
+        snprintf(out_file, 200, "%s/f_coe", regr->reg_p.out_dir);
+    }
+    if (NULL == (fp = fopen(out_file, "w"))){
+        fprintf(stderr, "can not open output file");
+        return;
+    }
+    for (int i = 0; i < regr->feature_len; i++){
+        fprintf(fp, "%s\t%.10f\n", regr->train_ds->id_map[i], regr->x[i]);
+    }
+    fclose(fp);
+}
+
+void free_model(REGR * regr){
+    if (regr){
+        if (regr->train_ds){
+            data_free(regr->train_ds);
+            regr->train_ds = NULL;
+        }
+        if (regr->test_ds){
+            data_free(regr->test_ds);
+            regr->test_ds = NULL;
+        }
+        if (regr->x){
+            free(regr->x);
+            regr->x = NULL;
+        }
+        free(regr);
+    }
 }

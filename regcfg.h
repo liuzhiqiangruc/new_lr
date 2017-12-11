@@ -24,4 +24,8 @@ typedef struct {
     char * out_dir;              /* output dir           */
 }REGP;
 
+
+
+int parse_command_line(REGP *p, int argc, char *argv[]);
+
 #endif //REGCFG_H

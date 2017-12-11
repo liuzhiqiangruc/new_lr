@@ -1,11 +1,10 @@
 /* ========================================================
- *   Copyright (C) 2015 All rights reserved.
+ *   Copyright (C) 2017 All rights reserved.
  *   
  *   filename : lr.c
- *   author   : liuzhiqiangruc@126.com
- *   date     : 2015-08-27
- *   info     : LR implementation
- *              Using regression framework
+ *   author   : ***
+ *   date     : 2017-12-11
+ *   info     : 
  * ======================================================== */
 
 #include <math.h>
@@ -15,46 +14,20 @@
 #include "auc.h"
 #include "lr.h"
 
-static void l1_norm(double *x, double *g, double lambda, int n){
-    for (int i = 0; i < n; i++){
-        if (x[i] > 0.0){
-            g[i] += lambda;
-        }
-        else if (x[i] < 0.0){
-            g[i] -= lambda;
-        }
-        else if (g[i] > lambda){
-            g[i] -= lambda;
-        }
-        else if (g[i] < -lambda){
-            g[i] += lambda;
-        }
+static double l1_norm(double x, double g, double lambda){
+    if (x > 0.0){
+        g += lambda;
     }
-}
-
-void lr_grad(REGR *regr, double *g){
-    DATA * ds   = regr->train_ds;
-    int i = 0, j = 0;
-    double yest  = 0.0, hx = 0.0;
-    memset(g, 0, sizeof(double) * ds->col);
-    for (i = 0; i < ds->row; i++) {
-        yest = 0.0;
-        for (j = 0; j < ds->len[i]; j++){
-            yest += regr->x[ds->ids[ds->clen[i] + j]] * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
-        }
-        hx = yest < -30.0 ? 0.0 : (yest > 30.0 ? 1.0 : 1.0 / (1.0 + exp(-yest)));
-        for (j = 0; j < ds->len[i]; j++){
-            g[ds->ids[ds->clen[i] + j]] += (hx - ds->y[i]) * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
-        }
+    else if (x < 0.0){
+        g -= lambda;
     }
-    if (regr->reg_p.r == 2){    // for l2 norm
-        for (i = 0; i < ds->col; i++){
-            g[i] += regr->reg_p.gamma * (regr->x[i]) * 2;
-        }
+    else if (g > lambda){
+        g -= lambda;
     }
-    else if (regr->reg_p.r == 1){ // for l1 norm
-        l1_norm(regr->x, g, regr->reg_p.gamma, ds->col);
+    else if (g < -lambda){
+        g+= lambda;
     }
+    return g;
 }
 
 static double loss(double * x, DATA * ds, double * hy){
@@ -75,7 +48,7 @@ static double loss(double * x, DATA * ds, double * hy){
 
 // repo the train and test loss and auc status
 // and return the train data loss
-double lr_repo(REGR *regr){
+static double lr_repo(REGR *regr){
     double train_loss, test_loss = 0.0, train_auc, test_auc = 0.0;
     double *train_hy = (double*)calloc(regr->train_ds->row, sizeof(double));
     double *test_hy  = NULL;
@@ -92,7 +65,58 @@ double lr_repo(REGR *regr){
     return train_loss;
 }
 
+#define sign(x) ((x)>0.0?1:((x)<0.0?-1:0))
+
+static int lr_learn (REGR * regr){
+    int n, i, j, offs, len;
+    double *g = NULL;
+    double delta = 0.0, loss = 0.0, new_loss = 0.0, hx = 0.0, yest = 0.0;
+    DATA * ds = regr->train_ds;
+    g = (double*)calloc(regr->feature_len, sizeof(double));
+    loss = lr_repo(regr);
+    for (n = 0; n < regr->reg_p.n; n++){
+        for (i = 0; i < ds->row; i++){
+            offs = ds->clen[i];
+            len  = ds->len[i];
+            yest = 0.0;
+            if (ds->fea_type == BINARY) for (j = 0; j < len; j++){
+                yest += regr->x[ds->ids[offs + j]];
+            }
+            else if (ds->fea_type == NOBINARY) for (j = 0; j < len; j++){
+                yest += regr->x[ds->ids[offs + j]] * ds->vals[offs + j];
+            }
+            hx = yest < -30.0 ? 0.0 : (yest > 30.0 ? 1.0 : 1.0 / (1.0 + exp(-yest)));
+            if (ds->fea_type == BINARY) for (j = 0; j < len; j++) {
+                g[ds->ids[offs + j]] = hx - ds->y[i];
+            }
+            else if (ds->fea_type == NOBINARY) for (j = 0; j < len; j++){
+                g[ds->ids[offs + j]] = (hx - ds->y[i]) * ds->vals[offs + j];
+            }
+            for (j = 0; j < len; j++){
+                if (regr->reg_p.r == 2) g[ds->ids[offs + j]] += regr->reg_p.gamma * regr->x[ds->ids[offs + j]];
+                if (regr->reg_p.r == 1) g[ds->ids[offs + j]]  = l1_norm(regr->x[ds->ids[offs + j]], g[ds->ids[offs + j]], regr->reg_p.gamma);
+            }
+            for (j = 0; j < len; j++){
+                delta = regr->reg_p.alpha * g[ds->ids[offs + j]];
+                if (regr->reg_p.r == 1) if (sign(regr->x[ds->ids[offs + j]]) * (regr->x[ds->ids[offs + j]] - delta) < 0.0){
+                    delta = regr->x[ds->ids[offs + j]];
+                }
+                regr->x[ds->ids[offs + j]] -= delta;
+            }
+        }
+        new_loss = lr_repo(regr);
+        if (loss - new_loss <= regr->reg_p.toler){
+            fprintf(stderr, "conv done!!!\n");
+            break;
+        }
+        loss = new_loss;
+    }
+    free(g);
+    g = NULL;
+    return 0;
+}
+
 REGR * create_lr_model(){
-    REGR * lr = create_model(lr_grad, lr_repo);
+    REGR * lr = create_model(lr_learn);
     return lr;
 }

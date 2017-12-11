@@ -31,42 +31,11 @@ int init_model(REGR * regr){
     return 0;
 }
 
-REGR * create_model(GRAD_FN grad_fn, REPO_FN repo_fn){
-    if (!repo_fn || !grad_fn){
+REGR * create_model(LEARN_FN learn_fn){
+    if (!learn_fn){
         return NULL;
     }
     REGR *regr = (REGR*)calloc(1, sizeof(REGR));
-    regr->repo_fn = repo_fn;
-    regr->grad_fn = grad_fn;
+    regr->learn_fn = learn_fn;
     return regr;
-}
-
-int learn_model(REGR * regr){
-    int i, j;
-    double *g = NULL;
-    double delta = 0.0, loss = 0.0, new_loss = 0.0;
-    g = (double*)calloc(regr->feature_len, sizeof(double));
-    loss = regr->repo_fn(regr);
-    for (i = 0; i < regr->reg_p.n; i++){
-        regr->grad_fn(regr, g);
-        for (j = 0; j < regr->feature_len; j++){
-            delta = regr->reg_p.alpha * g[j];
-            if (regr->reg_p.r == 1){
-                if (regr->x[j] > 0.0 && delta > regr->x[j]){
-                    delta = 0.0;
-                }
-                if (regr->x[j] < 0.0 && delta < regr->x[j]){
-                    delta = 0.0;
-                }
-            }
-            regr->x[j] -= delta;
-        }
-        new_loss = regr->repo_fn(regr);
-        if (loss - new_loss <= regr->reg_p.toler){
-            fprintf(stderr, "conv done!!!\n");
-            break;
-        }
-        loss = new_loss;
-    }
-    return 0;
 }

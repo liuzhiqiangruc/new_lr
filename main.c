@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     }
 
     long t1 = time(NULL);
-    learn_model(lr);
+    lr->learn_fn(lr);
     long t2 = time(NULL);
     fprintf(stderr, "using seconds : %ld\n", t2 - t1);
     return 0;

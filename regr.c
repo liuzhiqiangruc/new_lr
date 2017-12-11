@@ -22,7 +22,12 @@ int init_model(REGR * regr){
     free(hs);
     hs = NULL;
     regr->feature_len = regr->train_ds->col;
-    regr->x = (double*)calloc(regr->feature_len, sizeof(double));
+    if (regr->reg_p.k == 0) {   // just for simple lr
+        regr->x = (double*)calloc(regr->feature_len, sizeof(double));
+    }
+    else{                       // with k nodes as latent layer
+        regr->x = (double*)calloc((regr->feature_len + 1) * regr->reg_p.k, sizeof(double));
+    }
     return 0;
 }
 

@@ -15,6 +15,7 @@ typedef struct {
     int s;                       /* save step            */
     int b;                       /* binary or not        */
     int r;                       /* L1 or L2 norm        */
+    int k;                       /* latent dim length    */
     double alpha;                /* learning rate        */
     double gamma;                /* regulization         */
     double toler;                /* tolerance for conv   */

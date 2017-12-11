@@ -15,12 +15,13 @@
 
 void help() {
     fprintf(stderr, "\nLR [Logistic Regression] usage:        \n");
-    fprintf(stderr, "\n./lr -a <double> -g <double> -l <double> -b <int> -r <int> -n <int> -s <int> -f <string> -t <string> -o <string>\n");
+    fprintf(stderr, "\n./lr -a <double> -g <double> -l <double> -b <int> -r <int> -k <int> -n <int> -s <int> -f <string> -t <string> -o <string>\n");
     fprintf(stderr, "     -a  learning rate                   \n");
     fprintf(stderr, "     -g  regulization paramenter         \n");
     fprintf(stderr, "     -l  Convergence tolerance           \n");
     fprintf(stderr, "     -b  1:binary or else                \n");
     fprintf(stderr, "     -r  1:L1 Norm; 2: L2 Norm           \n");
+    fprintf(stderr, "     -k  length of latent factor         \n");
     fprintf(stderr, "     -n  max iteration count             \n");
     fprintf(stderr, "     -s  savestep                        \n");
     fprintf(stderr, "     -f  train input file                \n");
@@ -30,7 +31,7 @@ void help() {
 
 int parse_command_line(REGP *p, int argc, char *argv[]){
     double a = 0, g = 0, l = 1e-5;
-    int b = 0, r = 1, n = 10, s = 10;
+    int b = 0, r = 1, n = 10, s = 10, k = 0;
     char * f = NULL;
     char * t = NULL;
     char * o = "./";
@@ -65,6 +66,9 @@ int parse_command_line(REGP *p, int argc, char *argv[]){
         else if (0 == strcmp(arg,"-r")){
             r = atoi(argv[++i]);
         }
+        else if (0 == strcmp(arg,"-k")){
+            k = atoi(argv[++i]);
+        }
         else if (0 == strcmp(arg,"-f")){
             f = argv[++i];
         }
@@ -93,6 +97,7 @@ int parse_command_line(REGP *p, int argc, char *argv[]){
     p->toler       = l;
     p->b           = b;
     p->r           = r;
+    p->k           = k;
     p->n           = n;
     p->s           = s;
     p->train_input = f;

@@ -38,15 +38,13 @@ void lr_grad(REGR *regr, double *g){
     double yest  = 0.0, hx = 0.0;
     memset(g, 0, sizeof(double) * ds->col);
     for (i = 0; i < ds->row; i++) {
-        if (random() > 0.8){
-            yest = 0.0;
-            for (j = 0; j < ds->len[i]; j++){
-                yest += regr->x[ds->ids[ds->clen[i] + j]] * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
-            }
-            hx = yest < -30.0 ? 0.0 : (yest > 30.0 ? 1.0 : 1.0 / (1.0 + exp(-yest)));
-            for (j = 0; j < ds->len[i]; j++){
-                g[ds->ids[ds->clen[i] + j]] += (hx - ds->y[i]) * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
-            }
+        yest = 0.0;
+        for (j = 0; j < ds->len[i]; j++){
+            yest += regr->x[ds->ids[ds->clen[i] + j]] * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
+        }
+        hx = yest < -30.0 ? 0.0 : (yest > 30.0 ? 1.0 : 1.0 / (1.0 + exp(-yest)));
+        for (j = 0; j < ds->len[i]; j++){
+            g[ds->ids[ds->clen[i] + j]] += (hx - ds->y[i]) * (ds->fea_type == BINARY ? 1.0 : ds->vals[ds->clen[i] + j]);
         }
     }
     if (regr->reg_p.r == 2){    // for l2 norm

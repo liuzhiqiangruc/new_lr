@@ -15,8 +15,6 @@
 #include "auc.h"
 #include "lr.h"
 
-#define sign(x) (x >0.0?1:(x<0.0?-1:0)) 
-
 static void l1_norm(double *x, double *g, double lambda, int n){
     for (int i = 0; i < n; i++){
         if (x[i] > 0.0){
@@ -32,10 +30,6 @@ static void l1_norm(double *x, double *g, double lambda, int n){
             g[i] += lambda;
         }
     }
-}
-
-static double random_f(){
-    return (1.0 + rand()) / (1.0 + RAND_MAX);
 }
 
 void lr_grad(REGR *regr, double *g){

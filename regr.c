@@ -45,6 +45,9 @@ void save_model(REGR * regr, int n){
     FILE * fp = NULL;
     char * outdir = regr->reg_p.out_dir;
     char out_file[512] = {0};
+    int k, c;
+    k = regr->reg_p.k;
+    c = regr->feature_len;
     mkdir(outdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (n < regr->reg_p.n){
         snprintf(out_file, 200, "%s/%d_coe", regr->reg_p.out_dir, n);
@@ -56,8 +59,22 @@ void save_model(REGR * regr, int n){
         fprintf(stderr, "can not open output file");
         return;
     }
-    for (int i = 0; i < regr->feature_len; i++){
+    if (k == 0) for (int i = 0; i < c; i++){
         fprintf(fp, "%s\t%.10f\n", regr->train_ds->id_map[i], regr->x[i]);
+    }
+    else if (k > 0){
+        for (int i = 0; i < c; i++) {
+            fprintf(fp, "%s" , regr->train_ds->id_map[i]);
+            for (int j = 0; j < k; j++){
+                fprintf(fp, "\t%.8f", regr->x[i * k + j]);
+            }
+            fprintf(fp, "\n");
+        }
+        fprintf(fp, "latent_embeding");
+        for (int j = 0; j < k; j++){
+            fprintf(fp, "\t%.8f", regr->x[c * k + j]);
+        }
+        fprintf(fp, "\n");
     }
     fclose(fp);
 }

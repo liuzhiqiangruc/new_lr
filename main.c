@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "deeplr.h"
 #include "lr.h"
 
 void help() {
@@ -30,7 +31,7 @@ void help() {
 }
 
 int main(int argc, char *argv[]) {
-    REGR * lr = create_lr_model();
+    REGR * lr = create_deeplr_model();
     if (-1 == parse_command_line(&(lr->reg_p), argc, argv)){
         help();
         goto except;

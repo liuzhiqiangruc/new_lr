@@ -2,9 +2,9 @@
  *   Copyright (C) 2017 All rights reserved.
  *   
  *   filename : deeplr.c
- *   author   : ***
+ *   author   : liuzhiqiangruc@126.com
  *   date     : 2017-12-11
- *   info     : 
+ *   info     : just support l2 norm for now
  * ======================================================== */
 
 
@@ -15,24 +15,30 @@
 #include "auc.h"
 #include "deeplr.h"
 
-static double l1_norm(double x, double g, double lambda){
-    if (x > 0.0){
-        g += lambda;
-    }
-    else if (x < 0.0){
-        g -= lambda;
-    }
-    else if (g > lambda){
-        g -= lambda;
-    }
-    else if (g < -lambda){
-        g+= lambda;
-    }
-    return g;
-}
-
-static double loss(double * x, DATA * ds, double * hy){
+static double loss(double * x, DATA * ds, double * hy, int k, int c){
     double loss = 0.0, yest = 0.0, add = 0.0;
+    int i, j, offs, len, l;
+    double *e = (double*)calloc(k, sizeof(double));
+    for (i = 0; i < ds->row; i++){
+        offs = ds->clen[i];
+        len  = ds->len[i];
+        memset(e, 0, sizeof(double) * k);
+        if (ds->fea_type == BINARY) for (j = 0; j < len; j++) for (l = 0; l < k; l++){
+            e[l] += x[ds->ids[offs + j] * k + l];
+        }
+        else if (ds->fea_type == NOBINARY) for (j = 0; j < len; j++) for (l = 0; l < k; l++){
+            e[l] += x[ds->ids[offs + j] * k + l] * ds->vals[offs + j];
+        }
+        yest = 0.0;
+        for (l = 0; l < k; l++){
+            e[l] = 1.0 / (1 + exp(-e[l]));
+            yest += e[l] * x[c * k + l];
+        }
+        if (hy) hy[i] = yest;
+        add = yest > 30.0 ? yest : (yest < -30.0 ? 0.0 : log(1.0 + exp(yest)));
+        add -= (ds->y[i] > 0.0 ? yest : 0.0);
+        loss += add;
+    }
     return loss;
 }
 
@@ -42,12 +48,12 @@ static double lr_repo(REGR *regr){
     double train_loss, test_loss = 0.0, train_auc, test_auc = 0.0;
     double *train_hy = (double*)calloc(regr->train_ds->row, sizeof(double));
     double *test_hy  = NULL;
-    train_loss = loss(regr->x, regr->train_ds, train_hy);
+    train_loss = loss(regr->x, regr->train_ds, train_hy, regr->reg_p.k, regr->feature_len);
     train_auc  = auc(regr->train_ds->row, train_hy, regr->train_ds->y);
     fprintf(stderr, "train_loss : %.8f, train_auc : %.8f", train_loss, train_auc); 
     if (regr->test_ds){
         test_hy = (double*)calloc(regr->test_ds->row, sizeof(double));
-        test_loss = loss(regr->x, regr->test_ds, test_hy);
+        test_loss = loss(regr->x, regr->test_ds, test_hy, regr->reg_p.k, regr->feature_len);
         test_auc  = auc(regr->test_ds->row, test_hy, regr->test_ds->y);
         fprintf(stderr, ";  test_loss : %.8f, test_auc : %.8f", test_loss, test_auc); 
     }
@@ -56,18 +62,51 @@ static double lr_repo(REGR *regr){
 }
 
 #define sign(x) ((x)>0.0?1:((x)<0.0?-1:0))
+static double random_f(){
+    return (1.0 + rand()) / (1.0 + RAND_MAX);
+}
 
 static int deeplr_learn (REGR * regr){
-    int n, i, j, offs, len;
-    double *g = NULL;
-    double delta = 0.0, loss = 0.0, new_loss = 0.0, hx = 0.0, yest = 0.0;
+    int n, i, j, offs, len, k, l, c;
+    double delta = 0.0, loss = 0.0, new_loss = 0.0, hx = 0.0, yest = 0.0, tmp = 0.0;
+    double *x = regr->x;
+    double *e = NULL;
     DATA * ds = regr->train_ds;
-    g = (double*)calloc(regr->feature_len, sizeof(double));
+    k = regr->reg_p.k;
+    c = regr->feature_len;
+    tmp = sqrt(k);
+    for(i = 0; i < (c + 1) * k; i++){
+        regr->x[i] = random_f() / tmp;
+    }
+    e = (double *)calloc(k, sizeof(double));
     loss = lr_repo(regr);
     for (n = 1; n <= regr->reg_p.n; n++){
         for (i = 0; i < ds->row; i++){
-            // update model paramenters using sgd
-            // for each row
+            offs = ds->clen[i];
+            len  = ds->len[i];
+            memset(e, 0, sizeof(double) * k);
+            if (ds->fea_type == BINARY) for (j = 0; j < len; j++) for (l = 0; l < k; l++){
+                e[l] += regr->x[ds->ids[offs + j] * k + l];
+            }
+            else if (ds->fea_type == NOBINARY) for (j = 0; j < len; j++) for (l = 0; l < k; l++){
+                e[l] += regr->x[ds->ids[offs + j] * k + l] * ds->vals[offs + j];
+            }
+            yest = 0.0;
+            for (l = 0; l < k; l++){
+                e[l] = 1.0 / (1 + exp(-e[l]));
+                yest += e[l] * x[c * k + l];
+            }
+            hx = yest < -30.0 ? 0.0 : (yest > 30.0 ? 1.0 : 1.0 / (1.0 + exp(-yest)));
+            for (l = 0; l < k; l++){
+                tmp = (ds->y[i] - hx) * x[c * k + l] * e[l] * (1.0 - e[l]);
+                if (ds->fea_type == BINARY) for (j = 0; j < len; j++){
+                    x[ds->ids[offs + j] * k + l] += regr->reg_p.alpha* (tmp - regr->reg_p.gamma * x[ds->ids[offs + j] * k + l]);
+                }
+                else if (ds->fea_type == NOBINARY) for (j = 0; j < len; j++){
+                    x[ds->ids[offs + j] * k + l] += regr->reg_p.alpha* (tmp * ds->vals[offs + j] - regr->reg_p.gamma * x[ds->ids[offs + j] * k + l]);
+                }
+                x[c * k + l] += regr->reg_p.alpha * ((ds->y[i] - hx) * e[l] - regr->reg_p.gamma * x[c * k + l]);
+            }
         }
         if (n % regr->reg_p.s == 0){
             save_model(regr, n);
@@ -79,8 +118,8 @@ static int deeplr_learn (REGR * regr){
         }
         loss = new_loss;
     }
-    free(g);
-    g = NULL;
+    free(e);
+    e = NULL;
     return 0;
 }
 

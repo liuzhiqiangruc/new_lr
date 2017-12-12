@@ -61,7 +61,6 @@ static double lr_repo(REGR *regr){
     return train_loss;
 }
 
-#define sign(x) ((x)>0.0?1:((x)<0.0?-1:0))
 static double random_f(){
     return (1.0 + rand()) / (1.0 + RAND_MAX);
 }
@@ -76,7 +75,7 @@ static int deeplr_learn (REGR * regr){
     c = regr->feature_len;
     tmp = sqrt(k);
     for(i = 0; i < (c + 1) * k; i++){
-        regr->x[i] = random_f() / tmp;
+        x[i] = random_f() / tmp;
     }
     e = (double *)calloc(k, sizeof(double));
     loss = lr_repo(regr);
@@ -86,10 +85,10 @@ static int deeplr_learn (REGR * regr){
             len  = ds->len[i];
             memset(e, 0, sizeof(double) * k);
             if (ds->fea_type == BINARY) for (j = 0; j < len; j++) for (l = 0; l < k; l++){
-                e[l] += regr->x[ds->ids[offs + j] * k + l];
+                e[l] += x[ds->ids[offs + j] * k + l];
             }
             else if (ds->fea_type == NOBINARY) for (j = 0; j < len; j++) for (l = 0; l < k; l++){
-                e[l] += regr->x[ds->ids[offs + j] * k + l] * ds->vals[offs + j];
+                e[l] += x[ds->ids[offs + j] * k + l] * ds->vals[offs + j];
             }
             yest = 0.0;
             for (l = 0; l < k; l++){

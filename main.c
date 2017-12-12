@@ -31,6 +31,7 @@ void help() {
 }
 
 int main(int argc, char *argv[]) {
+    srand(time(NULL));
     REGR * lr = create_deeplr_model();
     if (-1 == parse_command_line(&(lr->reg_p), argc, argv)){
         help();

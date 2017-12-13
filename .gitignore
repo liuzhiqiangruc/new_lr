@@ -1,5 +1,5 @@
 *.o
 lr
+deeplr
 data/*
-build.sh
 tags

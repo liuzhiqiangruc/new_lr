@@ -15,14 +15,22 @@
 #include "lr.h"
 
 void help() {
+#ifdef LR
     fprintf(stderr, "\nLR [Logistic Regression] usage:        \n");
-    fprintf(stderr, "\n./lr -a <double> -g <double> -l <double> -b <int> -r <int> -k <int> -n <int> -s <int> -f <string> -t <string> -o <string>\n");
+    fprintf(stderr, "\n./lr -a <double> -g <double> -l <double> -b <int> -r <int>  -n <int> -s <int> -f <string> -t <string> -o <string>\n");
+#elif DEEPLR
+    fprintf(stderr, "\nDEEPLR [Logistic Regression] usage:        \n");
+    fprintf(stderr, "\n./deeplr -a <double> -g <double> -l <double> -b <int> -k <int> -n <int> -s <int> -f <string> -t <string> -o <string>\n");
+#endif
     fprintf(stderr, "     -a  learning rate                   \n");
     fprintf(stderr, "     -g  regulization paramenter         \n");
     fprintf(stderr, "     -l  Convergence tolerance           \n");
     fprintf(stderr, "     -b  1:binary or else                \n");
+#ifdef LR
     fprintf(stderr, "     -r  1:L1 Norm; 2: L2 Norm           \n");
+#elif DEEPLR
     fprintf(stderr, "     -k  length of latent factor         \n");
+#endif
     fprintf(stderr, "     -n  max iteration count             \n");
     fprintf(stderr, "     -s  savestep                        \n");
     fprintf(stderr, "     -f  train input file                \n");
@@ -32,7 +40,11 @@ void help() {
 
 int main(int argc, char *argv[]) {
     srand(time(NULL));
+#ifdef LR
+    REGR * lr = create_lr_model();
+#elif DEEPLR
     REGR * lr = create_deeplr_model();
+#endif
     if (-1 == parse_command_line(&(lr->reg_p), argc, argv)){
         help();
         goto except;
